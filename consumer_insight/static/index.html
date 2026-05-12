@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consumer Insight</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #0f0f13;
+    --bg2: #16161d;
+    --bg3: #1e1e28;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8e8f0;
+    --muted: #8888a0;
+    --accent: #7c6af7;
+    --accent2: #a78bfa;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--bg2);
+  }
+  .logo { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  header h1 { font-size: 16px; font-weight: 600; }
+  header p  { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .badge { margin-left: auto; background: rgba(124,106,247,0.15); border: 1px solid rgba(124,106,247,0.3); color: var(--accent2); font-size: 11px; padding: 3px 10px; border-radius: 99px; }
+
+  /* Layout */
+  .layout { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 65px); }
+
+  /* Sidebar */
+  .sidebar { background: var(--bg2); border-right: 1px solid var(--border); padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 1.5rem; }
+  .sidebar-title { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 0 .5rem; }
+
+  /* Auth */
+  .auth-box { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .75rem; }
+  .auth-box label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .auth-box input { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 6px; padding: 6px 8px; font-size: 12px; color: var(--text); font-family: monospace; }
+  .auth-box input:focus { outline: none; border-color: var(--accent); }
+  .auth-status { display: flex; align-items: center; gap: 5px; font-size: 11px; margin-top: 6px; color: var(--muted); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+
+  /* Tool cards */
+  .tool-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .75rem; cursor: pointer; transition: border-color .15s, background .15s; }
+  .tool-card:hover { border-color: var(--border2); background: rgba(255,255,255,0.03); }
+  .tool-card.active { border-color: var(--accent); background: rgba(124,106,247,0.08); }
+  .tool-header { display: flex; align-items: center; gap: 8px; }
+  .tool-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .icon-md   { background: rgba(96,165,250,0.15); }
+  .icon-json { background: rgba(251,191,36,0.15); }
+  .icon-csv  { background: rgba(52,211,153,0.15); }
+  .tool-name { font-size: 13px; font-weight: 600; }
+  .tool-badge { margin-left: auto; font-size: 10px; padding: 2px 7px; border-radius: 99px; font-weight: 600; }
+  .badge-md   { background: rgba(96,165,250,0.15); color: var(--blue); }
+  .badge-json { background: rgba(251,191,36,0.15); color: var(--amber); }
+  .badge-csv  { background: rgba(52,211,153,0.15); color: var(--green); }
+  .tool-desc { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+
+  /* Example queries */
+  .examples { display: flex; flex-direction: column; gap: 4px; }
+  .example-btn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 11px; color: var(--muted); text-align: left; cursor: pointer; transition: border-color .12s, color .12s; }
+  .example-btn:hover { border-color: var(--accent); color: var(--accent2); }
+
+  /* Main */
+  .main { display: flex; flex-direction: column; }
+
+  /* Query bar */
+  .query-bar { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); background: var(--bg2); display: flex; gap: 10px; }
+  .query-input { flex: 1; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 14px; color: var(--text); }
+  .query-input:focus { outline: none; border-color: var(--accent); }
+  .query-input::placeholder { color: var(--muted); }
+  .invoke-btn { background: var(--accent); border: none; border-radius: var(--radius-sm); padding: 10px 20px; font-size: 14px; font-weight: 600; color: #fff; cursor: pointer; transition: opacity .15s; white-space: nowrap; }
+  .invoke-btn:hover { opacity: 0.88; }
+  .invoke-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* Result area */
+  .result-area { flex: 1; padding: 1.5rem; overflow-y: auto; }
+  .placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 12px; color: var(--muted); }
+  .placeholder-icon { font-size: 40px; opacity: .3; }
+  .placeholder p { font-size: 14px; }
+
+  /* Response card */
+  .response-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .response-header { display: flex; align-items: center; gap: 10px; padding: .9rem 1.2rem; border-bottom: 1px solid var(--border); background: var(--bg3); }
+  .response-tool { font-size: 13px; font-weight: 600; color: var(--accent2); }
+  .response-meta { font-size: 11px; color: var(--muted); margin-left: auto; }
+  .response-body { padding: 1.2rem; }
+
+  /* Markdown output */
+  .md-output h2 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+  .md-output h3 { font-size: 14px; font-weight: 600; margin: 16px 0 8px; color: var(--accent2); }
+  .md-output table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .md-output th { background: var(--bg3); padding: 8px 12px; text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .05em; border-bottom: 1px solid var(--border2); }
+  .md-output td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .md-output tr:last-child td { border-bottom: none; }
+  .md-output code { background: rgba(255,255,255,0.08); border-radius: 4px; padding: 1px 6px; font-size: 12px; color: var(--amber); }
+  .md-output blockquote { border-left: 3px solid var(--accent); padding-left: 12px; color: var(--muted); font-size: 12px; margin-top: 12px; }
+  .md-output strong { color: var(--accent2); }
+  .md-output p { font-size: 13px; line-height: 1.6; margin-bottom: 8px; }
+
+  /* JSON output */
+  .json-output { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; font-family: monospace; font-size: 13px; line-height: 1.7; overflow-x: auto; white-space: pre; }
+  .json-key     { color: var(--blue); }
+  .json-string  { color: var(--green); }
+  .json-number  { color: var(--amber); }
+  .json-bool    { color: var(--accent2); }
+  .json-null    { color: var(--red); }
+
+  /* Sentiment visual */
+  .sentiment-vis { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+  .sentiment-score-row { display: flex; align-items: center; gap: 16px; }
+  .sentiment-emoji { font-size: 40px; }
+  .sentiment-label { font-size: 22px; font-weight: 700; text-transform: capitalize; }
+  .score-bar-wrap { flex: 1; }
+  .score-bar-bg { background: var(--bg); border-radius: 99px; height: 8px; overflow: hidden; }
+  .score-bar { height: 100%; border-radius: 99px; transition: width .6s ease; }
+  .score-num { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .stat-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .stat-chip { background: var(--bg3); border: 1px solid var(--border); border-radius: 99px; padding: 4px 10px; font-size: 11px; color: var(--muted); }
+
+  /* CSV output */
+  .csv-table-wrap { overflow-x: auto; }
+  .csv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .csv-table th { background: var(--bg3); padding: 8px 14px; text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .05em; border-bottom: 1px solid var(--border2); }
+  .csv-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+  .csv-table tr:last-child td { border-bottom: none; }
+  .csv-table .rank-cell { color: var(--muted); font-size: 12px; }
+  .score-pill { display: inline-block; background: rgba(124,106,247,0.15); color: var(--accent2); border-radius: 99px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+  .download-btn { display: inline-flex; align-items: center; gap: 6px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); border-radius: 6px; padding: 7px 14px; font-size: 12px; color: var(--green); cursor: pointer; margin-top: 12px; text-decoration: none; }
+  .download-btn:hover { background: rgba(52,211,153,0.18); }
+
+  /* Loading */
+  .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-row { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; padding: 2rem; }
+
+  /* Error */
+  .error-card { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); border-radius: var(--radius-sm); padding: 1rem; color: var(--red); font-size: 13px; }
+
+  /* Security info */
+  .sec-info { margin-top: auto; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .75rem; }
+  .sec-info .sec-title { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+  .sec-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .sec-item::before { content: "✓"; color: var(--green); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📊</div>
+  <div>
+    <h1>Consumer Insight</h1>
+    <p>Trend · Sentiment · Export</p>
+  </div>
+  <div class="badge">v1.0.0</div>
+</header>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+
+    <div>
+      <div class="sidebar-title" style="margin-bottom:.6rem">Authentication</div>
+      <div class="auth-box">
+        <label>X-API-Key</label>
+        <input type="password" id="api-key" value="insight-key-2024" placeholder="Enter API key">
+        <div class="auth-status"><div class="dot"></div> Key configured</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-title" style="margin-bottom:.6rem">Select Tool</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="tool-card active" data-tool="trend_tool" onclick="selectTool(this)">
+          <div class="tool-header">
+            <div class="tool-icon icon-md">📈</div>
+            <div class="tool-name">trend_tool</div>
+            <div class="tool-badge badge-md">Markdown</div>
+          </div>
+          <div class="tool-desc">Returns trending consumer insights for any topic &amp; region</div>
+        </div>
+        <div class="tool-card" data-tool="sentiment_tool" onclick="selectTool(this)">
+          <div class="tool-header">
+            <div class="tool-icon icon-json">🧠</div>
+            <div class="tool-name">sentiment_tool</div>
+            <div class="tool-badge badge-json">JSON</div>
+          </div>
+          <div class="tool-desc">Analyses consumer sentiment and returns structured JSON</div>
+        </div>
+        <div class="tool-card" data-tool="export_tool" onclick="selectTool(this)">
+          <div class="tool-header">
+            <div class="tool-icon icon-csv">📥</div>
+            <div class="tool-name">export_tool</div>
+            <div class="tool-badge badge-csv">CSV</div>
+          </div>
+          <div class="tool-desc">Exports trend data as downloadable CSV</div>
+        </div>
+        <!-- <div class="tool-card" data-tool="sports_tool" onclick="selectTool(this)">
+          <div class="tool-header">
+            <div class="tool-icon icon-md">🏆</div>
+            <div class="tool-name">sports_tool</div>
+            <div class="tool-badge badge-md">Markdown</div>
+          </div>
+          <div class="tool-desc">Returns trending sports insights for cricket, football, IPL and more</div>
+        </div> -->
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-title" style="margin-bottom:.6rem">Example Queries</div>
+      <div class="examples" id="examples"></div>
+    </div>
+
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="query-bar">
+      <input class="query-input" id="query" placeholder="Ask a consumer insight question…" value="What are trending skincare topics in Japan?">
+      <button class="invoke-btn" id="invoke-btn" onclick="invoke()">▶ Invoke</button>
+    </div>
+    <div class="result-area" id="result-area">
+      <div class="placeholder">
+        <div class="placeholder-icon">📊</div>
+        <p>Select a tool and enter a query to get started</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const TOOLS = {
+  trend_tool: {
+    examples: [
+      "What are trending skincare topics in Japan?",
+      "Fashion trends in Europe",
+      "Food trends in India",
+      "Tech consumer trends in USA",
+      "What are trending AI consumer topics globally?",
+      "What are trending health consumer topics in 2025?",
+      "What are trending fintech consumer topics in India?",
+    ]
+  },
+  sentiment_tool: {
+    examples: [
+      "This skincare product is amazing and popular!",
+      "The food delivery service is slow and expensive",
+      "AI tools are growing fast and innovative",
+      "The fashion brand has terrible quality",
+    ]
+  },
+  export_tool: {
+    examples: [
+      "Export skincare trends data",
+      "Download fashion trend CSV",
+      "Export food trends for India",
+      "Get tech trends as CSV",
+    ]
+  }
+};
+
+let currentTool = "trend_tool";
+
+function selectTool(el) {
+  document.querySelectorAll(".tool-card").forEach(c => c.classList.remove("active"));
+  el.classList.add("active");
+  currentTool = el.dataset.tool;
+  renderExamples();
+}
+
+function renderExamples() {
+  const container = document.getElementById("examples");
+  container.innerHTML = "";
+  TOOLS[currentTool].examples.forEach(ex => {
+    const btn = document.createElement("button");
+    btn.className = "example-btn";
+    btn.textContent = ex;
+    btn.onclick = () => { document.getElementById("query").value = ex; invoke(); };
+    container.appendChild(btn);
+  });
+}
+
+async function invoke() {
+  const query = document.getElementById("query").value.trim();
+  const apiKey = document.getElementById("api-key").value.trim();
+  if (!query) return;
+
+  const btn = document.getElementById("invoke-btn");
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div>';
+
+  const area = document.getElementById("result-area");
+  area.innerHTML = '<div class="loading-row"><div class="spinner"></div>Invoking ' + currentTool + '…</div>';
+
+  try {
+    const resp = await fetch("/invoke", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+      body: JSON.stringify({ tool: currentTool, query })
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      area.innerHTML = '<div class="error-card">❌ ' + (data.detail || "Request failed") + '</div>';
+      return;
+    }
+
+    renderResponse(data);
+  } catch (e) {
+    area.innerHTML = '<div class="error-card">❌ Network error – is the server running?</div>';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '▶ Invoke';
+  }
+}
+
+function renderResponse(data) {
+  const area = document.getElementById("result-area");
+  const badgeClass = { markdown: "badge-md", json: "badge-json", csv: "badge-csv" }[data.output_type] || "";
+  const badgeLabel = data.output_type.toUpperCase();
+
+  let bodyHTML = "";
+  if (data.output_type === "markdown") {
+    bodyHTML = '<div class="md-output">' + marked.parse(data.result) + '</div>';
+  } else if (data.output_type === "json") {
+    bodyHTML = renderJSON(data.result);
+  } else if (data.output_type === "csv") {
+    bodyHTML = renderCSV(data.result);
+  }
+
+  area.innerHTML = `
+    <div class="response-card">
+      <div class="response-header">
+        <span class="response-tool">${data.tool}</span>
+        <span class="tool-badge ${badgeClass}" style="margin-left:8px">${badgeLabel}</span>
+        <span class="response-meta">${data.latency_ms} ms · "${data.query.substring(0,40)}${data.query.length>40?'…':''}"</span>
+      </div>
+      <div class="response-body">${bodyHTML}</div>
+    </div>`;
+}
+
+function renderJSON(raw) {
+  try {
+    const obj = JSON.parse(raw);
+    if (obj.sentiment) return renderSentiment(obj);
+    return '<div class="json-output">' + syntaxHighlight(JSON.stringify(obj, null, 2)) + '</div>';
+  } catch {
+    return '<div class="json-output">' + raw + '</div>';
+  }
+}
+
+function renderSentiment(obj) {
+  const colors = { positive: "#34d399", neutral: "#fbbf24", negative: "#f87171" };
+  const barColor = colors[obj.sentiment] || "#7c6af7";
+  const score = Math.round(obj.score * 100);
+  const keywords = (obj.analysis?.keywords_detected || []).join(", ") || "—";
+  return `
+    <div class="sentiment-vis">
+      <div class="sentiment-score-row">
+        <div class="sentiment-emoji">${obj.emoji || "📊"}</div>
+        <div>
+          <div class="sentiment-label" style="color:${barColor}">${obj.sentiment}</div>
+          <div style="font-size:12px;color:var(--muted)">Confidence: ${obj.confidence}</div>
+        </div>
+        <div class="score-bar-wrap" style="margin-left:16px">
+          <div class="score-bar-bg"><div class="score-bar" style="width:${score}%;background:${barColor}"></div></div>
+          <div class="score-num">Score: ${obj.score} / 1.0</div>
+        </div>
+      </div>
+      <div class="stat-chips">
+        <div class="stat-chip">✅ Positive signals: ${obj.analysis?.positive_signals ?? 0}</div>
+        <div class="stat-chip">❌ Negative signals: ${obj.analysis?.negative_signals ?? 0}</div>
+        <div class="stat-chip">📝 Words: ${obj.analysis?.word_count ?? 0}</div>
+        <div class="stat-chip">🔑 Keywords: ${keywords}</div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6;padding:10px;background:var(--bg);border-radius:8px">${obj.summary}</div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Raw JSON</div>
+    <div class="json-output">${syntaxHighlight(JSON.stringify(obj, null, 2))}</div>`;
+}
+
+function renderCSV(raw) {
+  const lines = raw.trim().split("\n").filter(Boolean);
+  if (lines.length < 2) return '<pre>' + raw + '</pre>';
+  const headers = lines[0].split(",");
+  const rows = lines.slice(1).map(l => l.split(","));
+  let html = '<div class="csv-table-wrap"><table class="csv-table"><thead><tr>';
+  headers.forEach(h => { html += `<th>${h}</th>`; });
+  html += '</tr></thead><tbody>';
+  rows.forEach(row => {
+    html += '<tr>';
+    row.forEach((cell, i) => {
+      if (i === 0) html += `<td class="rank-cell">#${cell}</td>`;
+      else if (headers[i] === "score") html += `<td><span class="score-pill">${cell}</span></td>`;
+      else html += `<td>${cell}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+
+  // Download button
+  const blob = `data:text/csv;charset=utf-8,` + encodeURIComponent(raw);
+  html += `<a class="download-btn" href="${blob}" download="consumer_trends.csv">⬇ Download CSV</a>`;
+  return html;
+}
+
+function syntaxHighlight(json) {
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
+    let cls = 'json-number';
+    if (/^"/.test(m)) cls = /:$/.test(m) ? 'json-key' : 'json-string';
+    else if (/true|false/.test(m)) cls = 'json-bool';
+    else if (/null/.test(m)) cls = 'json-null';
+    return `<span class="${cls}">${m}</span>`;
+  });
+}
+
+document.getElementById("query").addEventListener("keydown", e => {
+  if (e.key === "Enter") invoke();
+});
+
+renderExamples();
+</script>
+</body>
+</html>
